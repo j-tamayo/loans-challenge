@@ -8,7 +8,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
 
 @Entity
@@ -18,11 +19,16 @@ public class User {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 	
-	@NotNull
+	@NotBlank
+	@Size(max = 255, message = "must not exceed 255 characters")
 	private String email;
 	
+	@NotBlank
+	@Size(max = 255, message = "must not exceed 255 characters")
 	private String firstName;
 	
+	@NotBlank
+	@Size(max = 255, message = "must not exceed 255 characters")
 	private String lastName;
 	
 	@OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
