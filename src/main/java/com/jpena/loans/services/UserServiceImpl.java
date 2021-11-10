@@ -19,9 +19,19 @@ public class UserServiceImpl implements UserService {
 	
 	@Autowired
 	LoanRepository loanRepository;
-
+	
 	@Override
-	public void deleteUser(long userId) {
+	public User getUser(Long id) {
+		Optional<User> user = userRepository.findById(id);
+		if (user.isPresent()) {
+			return user.get();
+		} else {
+			throw new EntityNotFoundException();
+		}
+	}
+	
+	@Override
+	public void deleteUser(Long userId) {
 		Optional<User> user = userRepository.findById(userId);
 		
 		if (user.isPresent()) {

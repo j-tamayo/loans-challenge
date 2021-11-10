@@ -2,7 +2,6 @@ package com.jpena.loans.controllers;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.persistence.EntityNotFoundException;
 import javax.validation.Valid;
@@ -42,10 +41,9 @@ public class Users {
 	
 	@GetMapping(value = "/{id}")
 	public User getUser(@PathVariable Long id) {
-		Optional<User> user = userRepository.findById(id);
-		if (user.isPresent()) {
-			return user.get();
-		} else {
+		try {
+			return userService.getUser(id);
+		} catch (EntityNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
 		}
 	}
