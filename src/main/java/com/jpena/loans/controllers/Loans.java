@@ -48,9 +48,9 @@ public class Loans {
 	
 	@GetMapping("/loans")
 	public List<Loan> getLoans(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "10") int size,
-			@RequestParam(defaultValue = "-1") Long userId) {
+			@RequestParam(required = false, name = "user_id") Long userId) {
 		Pageable paging = PageRequest.of(page - 1, size, Sort.by("id"));
-		Page<Loan> pagedLoans = userId.equals(-1L) ? loanRepository.findAll(paging) : loanRepository.findByUser_id(userId, paging);
+		Page<Loan> pagedLoans = userId != null ? loanRepository.findByUser_id(userId, paging) : loanRepository.findAll(paging);
 
 		if (pagedLoans.hasContent()) {
 			return pagedLoans.getContent();

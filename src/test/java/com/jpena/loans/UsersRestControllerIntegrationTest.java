@@ -2,12 +2,15 @@ package com.jpena.loans;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.math.BigDecimal;
 
 import org.junit.After;
 import org.junit.Test;
@@ -22,7 +25,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.jpena.loans.models.Loan;
 import com.jpena.loans.models.User;
+import com.jpena.loans.repositories.LoanRepository;
 import com.jpena.loans.repositories.UserRepository;
 
 @RunWith(SpringRunner.class)
@@ -38,8 +43,12 @@ public class UsersRestControllerIntegrationTest {
 	@Autowired
 	private UserRepository userRepository;
 	
+	@Autowired
+	private LoanRepository loanRepository;
+	
 	@After
 	public void resetDb() {
+		loanRepository.deleteAll();
 		userRepository.deleteAll();
 	}
 	
@@ -145,7 +154,7 @@ public class UsersRestControllerIntegrationTest {
 		)
 		.andExpect(status().isOk());
 		
-		assertThat(userRepository.count()).isEqualTo(0L);
+		assertThat(userRepository.count()).isZero();
 	}
 	
 	@Test
@@ -162,9 +171,145 @@ public class UsersRestControllerIntegrationTest {
 		
 	}
 	
+	@Test
+	@Order(6)
+	public void createLoan() throws Exception {
+		/**
+        *
+        * Create loan
+        *
+        * The request body is:
+        * {
+        *     "total": "1000",
+        * }
+        */
+       String json = "{\"total\": 1000}";
+       
+       createUserTest(1L, "jpena@test.com", "mimi", "Tamayo");
+       Long userId = userRepository.findAll().iterator().next().getId();
+       
+       mockMvc.perform(
+    		   post("/users/" + userId + "/loans")
+    		   .contentType(MediaType.APPLICATION_JSON)
+               .content(json)
+    	)
+       .andExpect(status().is2xxSuccessful());
+	}
+	
+	@Test
+	@Order(7)
+	public void createLoanOfNonExistentUser() throws Exception {
+		/**
+        *
+        * Create loan
+        *
+        * The request body is:
+        * {
+        *     "total": "1000",
+        * }
+        */
+       String json = "{\"total\": 1000}";
+       
+       mockMvc.perform(
+    		   post("/users/1/loans")
+    		   .contentType(MediaType.APPLICATION_JSON)
+               .content(json)
+    	)
+       .andExpect(status().isNotFound());
+	}
+	
+	@Test
+	@Order(8)
+	public void getLoans() throws Exception {
+		createUserTest(1L, "jpena@test.com", "mimi", "Tamayo");
+		User user = userRepository.findAll().iterator().next();
+		Long userId = userRepository.findAll().iterator().next().getId();
+		BigDecimal loanAmount = new BigDecimal(1000);
+		createLoanTest(user, loanAmount);
+		
+		mockMvc.perform(
+				get("/loans")
+				.contentType(MediaType.APPLICATION_JSON)
+		)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$", hasSize(1)))
+		.andExpect(jsonPath("$[0].total", is(loanAmount.doubleValue())))
+		.andExpect(jsonPath("$[0].userId", is(userId.intValue())));
+	}
+	
+	@Test
+	@Order(9)
+	public void getLoansInPage2() throws Exception {
+		createUserTest(1L, "jpena@test.com", "mimi", "Tamayo");
+		User user = userRepository.findAll().iterator().next();
+		Long userId = userRepository.findAll().iterator().next().getId();
+		BigDecimal loanAmount = new BigDecimal(1000);
+		BigDecimal loanAmount2 = new BigDecimal(1000);
+		createLoanTest(user, loanAmount);
+		createLoanTest(user, loanAmount2);
+		
+		mockMvc.perform(
+				get("/loans?page=2&size=1")
+				.contentType(MediaType.APPLICATION_JSON)
+		)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$", hasSize(1)))
+		.andExpect(jsonPath("$[0].total", is(loanAmount2.doubleValue())))
+		.andExpect(jsonPath("$[0].userId", is(userId.intValue())));
+	}
+	
+	@Test
+	@Order(10)
+	public void getLoansForUser() throws Exception {
+		createUserTest(1L, "jpena@test.com", "mimi", "Tamayo");
+		User user = userRepository.findAll().iterator().next();
+		Long userId = userRepository.findAll().iterator().next().getId();
+		BigDecimal loanAmount = new BigDecimal(1000);
+		BigDecimal loanAmount2 = new BigDecimal(1000);
+		createLoanTest(user, loanAmount);
+		createLoanTest(user, loanAmount2);
+		
+		mockMvc.perform(
+				get("/loans?user_id=" + userId)
+				.contentType(MediaType.APPLICATION_JSON)
+		)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$", hasSize(2)))
+		.andExpect(jsonPath("$[0].total", is(loanAmount.doubleValue())))
+		.andExpect(jsonPath("$[0].userId", is(userId.intValue())))
+		.andExpect(jsonPath("$[1].total", is(loanAmount2.doubleValue())))
+		.andExpect(jsonPath("$[1].userId", is(userId.intValue())));
+	}
+	
+	@Test
+	@Order(11)
+	public void getLoansForNonExistentUser() throws Exception {
+		createUserTest(1L, "jpena@test.com", "mimi", "Tamayo");
+		User user = userRepository.findAll().iterator().next();
+		Long userId = userRepository.findAll().iterator().next().getId() + 1;
+		BigDecimal loanAmount = new BigDecimal(1000);
+		BigDecimal loanAmount2 = new BigDecimal(1000);
+		createLoanTest(user, loanAmount);
+		createLoanTest(user, loanAmount2);
+		
+		mockMvc.perform(
+				get("/loans?user_id=" + userId)
+				.contentType(MediaType.APPLICATION_JSON)
+		)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$", hasSize(0)));
+	}
+	
 	private void createUserTest(Long id, String email, String firstName, String lastName) {
 		User user = new User(id, email, firstName, lastName);
 		
 		userRepository.save(user);
+	}
+	
+	private void createLoanTest(User user, BigDecimal amount) {
+		Loan loan = new Loan(amount);
+		loan.setUser(user);
+		
+		loanRepository.save(loan);
 	}
 }
