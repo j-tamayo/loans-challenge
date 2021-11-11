@@ -31,3 +31,7 @@ Para correr solo los tests se debe ejecutar el siguiente comando:
 mvn test
 ```
 La aplicación inicia por defecto en http://localhost:8081
+
+
+## API DOC
+https://j-tamayo.github.io/loans-challenge/index.html
