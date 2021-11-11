@@ -18,6 +18,8 @@ CREATE USER 'loans_user'@'localhost' IDENTIFIED BY 'loans123';
 GRANT ALL PRIVILEGES ON `loans_db`.* TO 'loans_user'@'localhost';
 
 ```
+Para cargar los datos se debe ejecutar el script `loans_db.sql` ubicado en la raíz del repositorio
+
 Para compilar y ejecutar los tests se debe correr el siguiente comando desde la raíz del proyecto:
 ```bash
 mvn clean install
